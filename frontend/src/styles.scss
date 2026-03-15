@@ -1,0 +1,163 @@
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// ============================================================
+// FarmaVida - Tema Grupo 6 (Azul, Blanco, Verde agua)
+// ============================================================
+
+:root {
+  --fv-azul:        #1565C0;
+  --fv-azul-claro:  #1E88E5;
+  --fv-verde-agua:  #00ACC1;
+  --fv-verde-light: #E0F7FA;
+  --fv-blanco:      #FFFFFF;
+  --fv-gris-claro:  #F5F7FA;
+  --fv-texto:       #2C3E50;
+}
+
+body {
+  background-color: var(--fv-gris-claro);
+  color: var(--fv-texto);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+// Navbar
+.navbar-farmavida {
+  background: linear-gradient(135deg, var(--fv-azul), var(--fv-verde-agua));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+// Sidebar
+.sidebar {
+  background: var(--fv-azul);
+  min-height: 100vh;
+  width: 240px;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  padding-top: 70px;
+
+  .nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin: 2px 10px;
+    transition: all 0.3s;
+
+    i { margin-right: 10px; font-size: 1.1rem; }
+
+    &:hover, &.active {
+      background: var(--fv-verde-agua);
+      color: var(--fv-blanco);
+    }
+  }
+}
+
+// Contenido principal
+.main-content {
+  margin-left: 240px;
+  padding: 80px 30px 30px;
+}
+
+// Cards
+.card-farmavida {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s;
+
+  &:hover { transform: translateY(-3px); }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--fv-azul), var(--fv-azul-claro));
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+    padding: 15px 20px;
+  }
+}
+
+// Cards del dashboard
+.stat-card {
+  border-radius: 12px;
+  color: white;
+  padding: 25px;
+  border: none;
+
+  &.azul       { background: linear-gradient(135deg, #1565C0, #1E88E5); }
+  &.verde-agua { background: linear-gradient(135deg, #00838F, #00ACC1); }
+  &.naranja    { background: linear-gradient(135deg, #E65100, #FB8C00); }
+  &.rojo       { background: linear-gradient(135deg, #B71C1C, #E53935); }
+
+  .stat-number { font-size: 2.5rem; font-weight: 700; }
+  .stat-label  { font-size: 0.9rem; opacity: 0.9; }
+  i            { font-size: 2.5rem; opacity: 0.3; }
+}
+
+// Botones
+.btn-farmavida {
+  background: linear-gradient(135deg, var(--fv-azul), var(--fv-verde-agua));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  &:hover { opacity: 0.9; color: white; }
+}
+
+// Tablas
+.table-farmavida {
+  thead {
+    background: linear-gradient(135deg, var(--fv-azul), var(--fv-azul-claro));
+    color: white;
+    th { border: none; padding: 12px 15px; }
+  }
+  tbody tr:hover { background-color: var(--fv-verde-light); }
+}
+
+// Badge stock bajo
+.badge-stock-bajo {
+  background-color: #E53935;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+// Login page
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--fv-azul) 0%, var(--fv-verde-agua) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+
+  .logo-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--fv-azul);
+    span { color: var(--fv-verde-agua); }
+  }
+}
+
+// Alerts
+.alert-stock {
+  background-color: #FFF3E0;
+  border-left: 4px solid #FB8C00;
+  border-radius: 8px;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; padding: 80px 15px 15px; }
+}

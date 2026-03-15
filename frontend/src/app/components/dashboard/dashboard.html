@@ -1,0 +1,114 @@
+<p>dashboard works!</p>
+<app-navbar></app-navbar>
+<app-sidebar></app-sidebar>
+
+<div class="main-content">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">
+      <i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard
+    </h4>
+    <span class="text-muted small">FarmaVida — Panel de Control</span>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="stat-card azul d-flex justify-content-between align-items-center">
+        <div>
+          <div class="stat-number">{{ resumen?.total_productos || 0 }}</div>
+          <div class="stat-label">Total Productos</div>
+        </div>
+        <i class="bi bi-capsule"></i>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card verde-agua d-flex justify-content-between align-items-center">
+        <div>
+          <div class="stat-number">{{ resumen?.total_proveedores || 0 }}</div>
+          <div class="stat-label">Proveedores</div>
+        </div>
+        <i class="bi bi-truck"></i>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card naranja d-flex justify-content-between align-items-center">
+        <div>
+          <div class="stat-number">{{ resumen?.ordenes_pendientes || 0 }}</div>
+          <div class="stat-label">Órdenes Pendientes</div>
+        </div>
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="stat-card rojo d-flex justify-content-between align-items-center">
+        <div>
+          <div class="stat-number">{{ resumen?.productos_stock_bajo || 0 }}</div>
+          <div class="stat-label">Stock Bajo</div>
+        </div>
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock bajo -->
+  <div class="card card-farmavida mb-4">
+    <div class="card-header">
+      <i class="bi bi-exclamation-triangle me-2"></i>Productos con Stock Bajo
+    </div>
+    <div class="card-body p-0">
+      <div *ngIf="cargando" class="text-center p-4">
+        <div class="spinner-border text-primary"></div>
+      </div>
+      <div *ngIf="!cargando && stockBajo.length === 0" class="text-center p-4 text-muted">
+        <i class="bi bi-check-circle text-success fs-3"></i>
+        <p class="mt-2">Todos los productos tienen stock suficiente</p>
+      </div>
+      <table *ngIf="!cargando && stockBajo.length > 0" class="table table-farmavida mb-0">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Stock Actual</th>
+            <th>Stock Mínimo</th>
+            <th>Faltantes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of stockBajo">
+            <td><code>{{ p.codigo }}</code></td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.categoria }}</td>
+            <td><span class="badge bg-danger">{{ p.stock_actual }}</span></td>
+            <td>{{ p.stock_minimo }}</td>
+            <td><span class="badge-stock-bajo">{{ p.unidades_faltantes }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Órdenes por mes -->
+  <div class="card card-farmavida">
+    <div class="card-header">
+      <i class="bi bi-bar-chart me-2"></i>Órdenes por Mes (últimos 6 meses)
+    </div>
+    <div class="card-body">
+      <div *ngIf="ordenesMes.length === 0" class="text-center text-muted py-3">
+        No hay órdenes registradas aún
+      </div>
+      <div *ngFor="let o of ordenesMes" class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="fw-semibold">{{ o.mes }}</span>
+          <span class="text-muted">{{ o.total }} órdenes</span>
+        </div>
+        <div class="progress" style="height: 10px;">
+          <div class="progress-bar"
+               style="background: var(--fv-verde-agua);"
+               [style.width]="(o.total * 20) + '%'">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

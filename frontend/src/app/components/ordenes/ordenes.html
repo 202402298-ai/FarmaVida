@@ -1,0 +1,262 @@
+<app-navbar></app-navbar>
+<app-sidebar></app-sidebar>
+
+<div class="main-content">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">
+      <i class="bi bi-cart-check me-2 text-primary"></i>Órdenes de Compra
+    </h4>
+    <button class="btn btn-farmavida" (click)="abrirModal()">
+      <i class="bi bi-plus-lg me-1"></i>Nueva Orden
+    </button>
+  </div>
+
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible">
+    <i class="bi bi-check-circle me-2"></i>{{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje=''"></button>
+  </div>
+
+  <div class="card card-farmavida mb-4">
+    <div class="card-body">
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm" [class.btn-farmavida]="filtroEstado===''"
+                [class.btn-outline-secondary]="filtroEstado!==''"
+                (click)="filtroEstado=''">Todas</button>
+        <button class="btn btn-sm" [class.btn-warning]="filtroEstado==='pendiente'"
+                [class.btn-outline-warning]="filtroEstado!=='pendiente'"
+                (click)="filtroEstado='pendiente'">Pendientes</button>
+        <button class="btn btn-sm" [class.btn-success]="filtroEstado==='completada'"
+                [class.btn-outline-success]="filtroEstado!=='completada'"
+                (click)="filtroEstado='completada'">Completadas</button>
+        <button class="btn btn-sm" [class.btn-danger]="filtroEstado==='cancelada'"
+                [class.btn-outline-danger]="filtroEstado!=='cancelada'"
+                (click)="filtroEstado='cancelada'">Canceladas</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-farmavida">
+    <div class="card-header">
+      <i class="bi bi-list-ul me-2"></i>Órdenes ({{ ordenesFiltradas.length }})
+    </div>
+    <div class="card-body p-0">
+      <div *ngIf="cargando" class="text-center p-4">
+        <div class="spinner-border text-primary"></div>
+      </div>
+      <table *ngIf="!cargando" class="table table-farmavida mb-0">
+        <thead>
+          <tr>
+            <th>N° Orden</th>
+            <th>Proveedor</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let o of ordenesFiltradas">
+            <td><code>{{ o.numero_orden }}</code></td>
+            <td>{{ o.proveedor_nombre }}</td>
+            <td>{{ o.fecha_orden | date:'dd/MM/yyyy' }}</td>
+            <td>L. {{ o.total | number:'1.2-2' }}</td>
+            <td><span class="badge {{ badgeEstado(o.estado) }}">{{ o.estado }}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-1" (click)="verDetalle(o.id)">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button *ngIf="o.estado==='pendiente'"
+                      class="btn btn-sm btn-outline-success me-1"
+                      (click)="cambiarEstado(o.id, 'completada')">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button *ngIf="o.estado==='pendiente'"
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="cambiarEstado(o.id, 'cancelada')">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva Orden -->
+<div *ngIf="mostrarModal" class="modal d-block" style="background:rgba(0,0,0,0.5)">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1565C0, #00ACC1); color:white;">
+        <h5 class="modal-title">
+          <i class="bi bi-cart-plus me-2"></i>Nueva Orden de Compra
+        </h5>
+        <button class="btn-close btn-close-white" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Proveedor *</label>
+            <select class="form-select" [(ngModel)]="form.proveedor_id">
+              <option [ngValue]="null">Seleccionar proveedor...</option>
+              <option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre }}</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Notas</label>
+            <input type="text" class="form-control" [(ngModel)]="form.notas"
+                   placeholder="Observaciones opcionales">
+          </div>
+        </div>
+
+        <div class="card border mb-3">
+          <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-plus-circle me-2"></i>Agregar Producto
+          </div>
+          <div class="card-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label">Producto</label>
+                <select class="form-select" [(ngModel)]="itemActual.producto_id"
+                        (change)="onProductoChange()">
+                  <option [ngValue]="null">Seleccionar...</option>
+                  <option *ngFor="let p of productos" [value]="p.id">
+                    {{ p.nombre }} ({{ p.codigo }})
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="form-control" [(ngModel)]="itemActual.cantidad" min="1">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Precio Unitario</label>
+                <input type="number" class="form-control" [(ngModel)]="itemActual.precio_unitario">
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-farmavida w-100" (click)="agregarItem()">
+                  <i class="bi bi-plus-lg"></i> Agregar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <table *ngIf="form.items.length > 0" class="table table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Precio Unit.</th>
+              <th>Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of form.items; let i = index">
+              <td>{{ item.nombre }}</td>
+              <td>{{ item.cantidad }}</td>
+              <td>L. {{ item.precio_unitario | number:'1.2-2' }}</td>
+              <td>L. {{ item.cantidad * item.precio_unitario | number:'1.2-2' }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" (click)="quitarItem(i)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" class="text-end fw-bold">Total:</td>
+              <td colspan="2" class="fw-bold text-primary">L. {{ totalOrden | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div *ngIf="form.items.length === 0" class="text-center text-muted py-3">
+          <i class="bi bi-cart-x fs-3"></i>
+          <p class="mt-2">No hay productos agregados</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-farmavida" (click)="guardar()">
+          <i class="bi bi-save me-1"></i>Crear Orden
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle -->
+<div *ngIf="mostrarDetalle && ordenSeleccionada" class="modal d-block" style="background:rgba(0,0,0,0.5)">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1565C0, #00ACC1); color:white;">
+        <h5 class="modal-title">
+          <i class="bi bi-file-text me-2"></i>Detalle — {{ ordenSeleccionada.numero_orden }}
+        </h5>
+        <button class="btn-close btn-close-white" (click)="cerrarDetalle()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p><strong>Proveedor:</strong> {{ ordenSeleccionada.proveedor_nombre }}</p>
+            <p><strong>Creado por:</strong> {{ ordenSeleccionada.usuario_nombre }}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Fecha:</strong> {{ ordenSeleccionada.fecha_orden | date:'dd/MM/yyyy HH:mm' }}</p>
+            <p><strong>Estado:</strong>
+              <span class="badge ms-1 {{ badgeEstado(ordenSeleccionada.estado) }}">
+                {{ ordenSeleccionada.estado }}
+              </span>
+            </p>
+          </div>
+          <div class="col-12" *ngIf="ordenSeleccionada.notas">
+            <p><strong>Notas:</strong> {{ ordenSeleccionada.notas }}</p>
+          </div>
+        </div>
+        <table class="table table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Código</th>
+              <th>Cantidad</th>
+              <th>Precio Unit.</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of ordenSeleccionada.detalle">
+              <td>{{ d.producto_nombre }}</td>
+              <td><code>{{ d.codigo }}</code></td>
+              <td>{{ d.cantidad }}</td>
+              <td>L. {{ d.precio_unitario | number:'1.2-2' }}</td>
+              <td>L. {{ d.subtotal | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" class="text-end fw-bold">Total:</td>
+              <td class="fw-bold text-primary">L. {{ ordenSeleccionada.total | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button *ngIf="ordenSeleccionada.estado==='pendiente'"
+                class="btn btn-success"
+                (click)="cambiarEstado(ordenSeleccionada.id, 'completada')">
+          <i class="bi bi-check-lg me-1"></i>Marcar Completada
+        </button>
+        <button *ngIf="ordenSeleccionada.estado==='pendiente'"
+                class="btn btn-danger"
+                (click)="cambiarEstado(ordenSeleccionada.id, 'cancelada')">
+          <i class="bi bi-x-lg"></i> Cancelar Orden
+        </button>
+        <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
