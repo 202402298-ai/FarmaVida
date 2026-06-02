@@ -1,0 +1,227 @@
+-- ============================================================
+--  FarmaVida - Script de Base de Datos
+--  Sistema de Gestión de Inventarios y Compras
+--  PostgreSQL
+-- ============================================================
+
+-- Crear base de datos (ejecutar por separado si es necesario)
+-- CREATE DATABASE farmavida;
+
+-- ============================================================
+-- EXTENSIONES
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================
+-- TABLA: roles
+-- ============================================================
+CREATE TABLE IF NOT EXISTS roles (
+    id          SERIAL PRIMARY KEY,
+    nombre      VARCHAR(50) NOT NULL UNIQUE,  -- 'administrador', 'empleado'
+    descripcion TEXT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: usuarios
+-- ============================================================
+CREATE TABLE IF NOT EXISTS usuarios (
+    id           SERIAL PRIMARY KEY,
+    nombre       VARCHAR(100) NOT NULL,
+    email        VARCHAR(150) NOT NULL UNIQUE,
+    password     VARCHAR(255) NOT NULL,  -- bcrypt hash
+    rol_id       INT NOT NULL REFERENCES roles(id),
+    activo       BOOLEAN DEFAULT TRUE,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: categorias
+-- ============================================================
+CREATE TABLE IF NOT EXISTS categorias (
+    id          SERIAL PRIMARY KEY,
+    nombre      VARCHAR(100) NOT NULL UNIQUE,
+    descripcion TEXT,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: proveedores
+-- ============================================================
+CREATE TABLE IF NOT EXISTS proveedores (
+    id          SERIAL PRIMARY KEY,
+    nombre      VARCHAR(150) NOT NULL,
+    contacto    VARCHAR(100),
+    telefono    VARCHAR(20),
+    email       VARCHAR(150),
+    direccion   TEXT,
+    activo      BOOLEAN DEFAULT TRUE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: productos
+-- ============================================================
+CREATE TABLE IF NOT EXISTS productos (
+    id              SERIAL PRIMARY KEY,
+    codigo          VARCHAR(50) NOT NULL UNIQUE,
+    nombre          VARCHAR(150) NOT NULL,
+    descripcion     TEXT,
+    precio          NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    stock_actual    INT NOT NULL DEFAULT 0,
+    stock_minimo    INT NOT NULL DEFAULT 5,
+    categoria_id    INT REFERENCES categorias(id),
+    imagen_url      VARCHAR(255),
+    activo          BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: ordenes_compra
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ordenes_compra (
+    id              SERIAL PRIMARY KEY,
+    numero_orden    VARCHAR(20) NOT NULL UNIQUE,  -- Ej: OC-2024-001
+    proveedor_id    INT NOT NULL REFERENCES proveedores(id),
+    usuario_id      INT NOT NULL REFERENCES usuarios(id),
+    estado          VARCHAR(20) NOT NULL DEFAULT 'pendiente'
+                    CHECK (estado IN ('pendiente', 'completada', 'cancelada')),
+    fecha_orden     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_recepcion TIMESTAMP,
+    total           NUMERIC(12, 2) DEFAULT 0.00,
+    notas           TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- TABLA: detalle_orden
+-- ============================================================
+CREATE TABLE IF NOT EXISTS detalle_orden (
+    id              SERIAL PRIMARY KEY,
+    orden_id        INT NOT NULL REFERENCES ordenes_compra(id) ON DELETE CASCADE,
+    producto_id     INT NOT NULL REFERENCES productos(id),
+    cantidad        INT NOT NULL CHECK (cantidad > 0),
+    precio_unitario NUMERIC(10, 2) NOT NULL,
+    subtotal        NUMERIC(12, 2) GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- ÍNDICES para mejorar rendimiento
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_productos_categoria   ON productos(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_productos_codigo      ON productos(codigo);
+CREATE INDEX IF NOT EXISTS idx_ordenes_proveedor     ON ordenes_compra(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_estado        ON ordenes_compra(estado);
+CREATE INDEX IF NOT EXISTS idx_detalle_orden         ON detalle_orden(orden_id);
+CREATE INDEX IF NOT EXISTS idx_usuarios_email        ON usuarios(email);
+
+-- ============================================================
+-- FUNCIÓN: actualizar updated_at automáticamente
+-- ============================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Triggers para updated_at
+CREATE TRIGGER trg_usuarios_updated_at
+    BEFORE UPDATE ON usuarios
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_productos_updated_at
+    BEFORE UPDATE ON productos
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_proveedores_updated_at
+    BEFORE UPDATE ON proveedores
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER trg_ordenes_updated_at
+    BEFORE UPDATE ON ordenes_compra
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
+-- DATOS INICIALES (Seeds)
+-- ============================================================
+
+-- Roles
+INSERT INTO roles (nombre, descripcion) VALUES
+    ('administrador', 'Acceso total al sistema'),
+    ('empleado',      'Acceso limitado: consultas y registro básico')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Usuario administrador por defecto
+-- Contraseña: Admin123! (hash bcrypt generado en el backend al iniciar)
+-- Este usuario se crea desde el backend con bcrypt; aquí se deja como referencia:
+-- INSERT INTO usuarios (nombre, email, password, rol_id)
+-- VALUES ('Administrador', 'admin@farmavida.com', '$2b$10$HASH_AQUI', 1);
+
+-- Categorías de farmacia
+INSERT INTO categorias (nombre, descripcion) VALUES
+    ('Medicamentos',         'Medicamentos con y sin receta'),
+    ('Vitaminas y Suplementos', 'Vitaminas, minerales y suplementos'),
+    ('Cuidado Personal',     'Productos de higiene y cuidado personal'),
+    ('Equipos Médicos',      'Equipos y dispositivos médicos'),
+    ('Bebés y Maternidad',   'Productos para bebés y madres'),
+    ('Primeros Auxilios',    'Botiquín y primeros auxilios')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- Proveedores de ejemplo
+INSERT INTO proveedores (nombre, contacto, telefono, email, direccion) VALUES
+    ('Distribuidora MediFarma S.A.',    'Carlos López',    '2222-1111', 'ventas@medifarma.hn',    'Col. Palmira, Tegucigalpa'),
+    ('Laboratorios HonduFarm',          'Ana González',    '3333-2222', 'pedidos@hondufarm.hn',   'Blvd. Los Próceres, Tegucigalpa'),
+    ('Importaciones SaludTotal',        'Roberto Martínez','4444-3333', 'compras@saludtotal.hn',  'San Pedro Sula, Cortés')
+ON CONFLICT DO NOTHING;
+
+-- Productos de ejemplo
+INSERT INTO productos (codigo, nombre, descripcion, precio, stock_actual, stock_minimo, categoria_id) VALUES
+    ('MED-001', 'Paracetamol 500mg x20',    'Analgésico y antipirético',               45.00,  50, 10, 1),
+    ('MED-002', 'Ibuprofeno 400mg x10',     'Antiinflamatorio',                         55.00,  30, 10, 1),
+    ('MED-003', 'Amoxicilina 500mg x21',    'Antibiótico de amplio espectro',           120.00,  8,  10, 1),
+    ('VIT-001', 'Vitamina C 1000mg x30',    'Suplemento vitamínico',                    85.00,  40, 15, 2),
+    ('VIT-002', 'Complejo B x50',           'Vitaminas del complejo B',                 95.00,   3, 10, 2),
+    ('CUI-001', 'Alcohol Isopropílico 1L',  'Antiséptico para heridas',                 60.00,  25, 10, 3),
+    ('EQU-001', 'Termómetro Digital',       'Termómetro infrarrojo sin contacto',       350.00,  5,  3, 4),
+    ('PAU-001', 'Vendas Elásticas x5',      'Kit de vendas para primeros auxilios',     80.00,  15, 5, 6)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- ============================================================
+-- VISTA: productos con stock bajo
+-- ============================================================
+CREATE OR REPLACE VIEW vw_productos_stock_bajo AS
+SELECT
+    p.id,
+    p.codigo,
+    p.nombre,
+    p.stock_actual,
+    p.stock_minimo,
+    (p.stock_minimo - p.stock_actual) AS unidades_faltantes,
+    c.nombre AS categoria
+FROM productos p
+LEFT JOIN categorias c ON p.categoria_id = c.id
+WHERE p.stock_actual < p.stock_minimo
+  AND p.activo = TRUE
+ORDER BY unidades_faltantes DESC;
+
+-- ============================================================
+-- VISTA: resumen dashboard
+-- ============================================================
+CREATE OR REPLACE VIEW vw_dashboard AS
+SELECT
+    (SELECT COUNT(*) FROM productos WHERE activo = TRUE)          AS total_productos,
+    (SELECT COUNT(*) FROM proveedores WHERE activo = TRUE)        AS total_proveedores,
+    (SELECT COUNT(*) FROM ordenes_compra WHERE estado='pendiente') AS ordenes_pendientes,
+    (SELECT COUNT(*) FROM ordenes_compra WHERE estado='completada') AS ordenes_completadas,
+    (SELECT COUNT(*) FROM productos WHERE stock_actual < stock_minimo AND activo = TRUE) AS productos_stock_bajo;
+
+-- ============================================================
+-- FIN DEL SCRIPT
+-- ============================================================
