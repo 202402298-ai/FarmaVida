@@ -116,6 +116,7 @@ export class OrdenesComponent implements OnInit {
       next: () => {
         this.mensaje = 'Orden de compra creada exitosamente';
         this.cerrarModal();
+        this.speakOrderReceived();
         this.cargarDatos();
       },
       error: (err) => {
@@ -123,6 +124,16 @@ export class OrdenesComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  speakOrderReceived() {
+    const texto = 'Orden de compra recibida correctamente';
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(texto);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn('Speech synthesis no es compatible en este navegador.');
+    }
   }
 
   verDetalle(id: number) {
