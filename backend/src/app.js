@@ -1,9 +1,12 @@
 const express = require('express');
 const cors    = require('cors');
 require('dotenv').config();
+const passport = require('./config/passport');
 const pool    = require('./config/db');
 
 const app = express();
+
+app.use(passport.initialize());
 
 // Middlewares globales
 app.use(cors());

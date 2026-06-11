@@ -18,6 +18,13 @@ export class LoginComponent {
 
   constructor(private auth: AuthService, private router: Router) {}
 
+  loginGoogle() {
+    this.error = '';
+    this.cargando = true;
+    // Redirige al backend para iniciar el flujo de autenticación con Google
+    window.location.href = 'http://localhost:3000/api/auth/google';
+  }
+
   login() {
     this.error = '';
     this.cargando = true;
@@ -28,5 +35,6 @@ export class LoginComponent {
         this.cargando = false;
       }
     });
+    
   }
 }

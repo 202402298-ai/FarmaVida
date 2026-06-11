@@ -13,8 +13,7 @@ const findByEmail = async (email) => {
 
 const createUsuario = async ({ nombre, email, password, rol_id }) => {
   const result = await pool.query(
-    `INSERT INTO usuarios (nombre, email, password, rol_id)
-     VALUES ($1, $2, $3, $4) RETURNING id, nombre, email, rol_id`,
+    'INSERT INTO usuarios (nombre, email, password, rol_id) VALUES ($1, $2, $3, $4) RETURNING *',
     [nombre, email, password, rol_id]
   );
   return result.rows[0];

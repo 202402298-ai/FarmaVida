@@ -21,6 +21,12 @@ export class AuthService {
     );
   }
 
+  loginConGoogle(token: string, usuario: any): void {
+    localStorage.setItem('token', token);
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+    this.usuarioSubject.next(usuario);
+  }
+
   logout(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
